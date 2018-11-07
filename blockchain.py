@@ -205,4 +205,4 @@ if __name__ == "__main__":
     blockchain.mine()
     blockchain.mine()
     print(blockchain.add_transaction(sender=node_identifier, recipient="someone_else", amount=5))
-    print(blockchain.full_chain())
+    print(json.dumps(blockchain.full_chain(), sort_keys=True, indent=4))  # Pretty print blockchain
