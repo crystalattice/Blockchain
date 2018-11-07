@@ -200,9 +200,9 @@ class Blockchain:
 if __name__ == "__main__":
     blockchain = Blockchain()
     node_identifier = "127.0.0.1"
-    # print(blockchain.mine())
+    print(blockchain.mine())
     blockchain.mine()
     blockchain.mine()
     blockchain.mine()
-    # print(blockchain.add_transaction(sender=node_identifier, recipient="someone_else", amount=5))
-    # print(blockchain.full_chain())
+    print(blockchain.add_transaction(sender=node_identifier, recipient="someone_else", amount=5))
+    print(blockchain.full_chain())
