@@ -14,6 +14,7 @@ class Blockchain:
 
     def register_node(self, address):
         """Add a new node to the list of n/w nodes"""
+        # Get node URL address
         # parsed_url = urlparse(address)
         # self.nodes.add((parsed_url.netloc))
 
@@ -66,7 +67,7 @@ class Blockchain:
         'p' is the previous proof; 'p`' is the new proof
         """
         proof = 0
-        while self.valid_proof(last_proof, proof) == False:
+        while not self.valid_proof(last_proof, proof):
             proof += 1
 
         return proof
@@ -196,6 +197,7 @@ class Blockchain:
             return "Our chain was replaced with {}".format(self.chain)
         else:
             return "Our chain is accurate. Chain is {}".format(self.chain)
+
 
 if __name__ == "__main__":
     blockchain = Blockchain()
