@@ -14,7 +14,8 @@ python_version = "3.6"
 
 pymodbus = "*"
 "pymodbus3" = "*"
-Twisted = "*"
+twisted = "*"
+crypto = "*"
 
 
 [dev-packages]
