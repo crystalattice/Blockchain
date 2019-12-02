@@ -1,22 +1,18 @@
 [[source]]
-
 url = "https://pypi.org/simple"
 verify_ssl = true
 name = "pypi"
 
-
 [requires]
-
 python_version = "3.6"
 
-
 [packages]
-
 pymodbus = "*"
-"pymodbus3" = "*"
+pymodbus3 = "*"
 twisted = "*"
 crypto = "*"
-
+numpy = "*"
+pandas = "*"
+pycrypto = "*"
 
 [dev-packages]
-
