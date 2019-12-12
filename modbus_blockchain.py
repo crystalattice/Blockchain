@@ -48,7 +48,7 @@ class Blockchain:
     @staticmethod
     def pickle_cmd(cmd):
         """Serialize modbus command for JSON object."""
-        modbus_pickle = pickle(cmd)
+        modbus_pickle = pickle.dump(cmd)
 
         return modbus_pickle
 
@@ -171,9 +171,8 @@ class Blockchain:
     def resolve_conflicts(self):
         """Consensus algorithm
 
-        Resolves conflicts by replacing current chain with longest one on n/w.
-
-        Assumes longest chain is the only valid chain.
+        Resolves conflicts by replacing current chain with longest one on n/w. Assumes longest chain is the only
+        valid chain.
         """
         neighbors = self.nodes
         new_chain = None
