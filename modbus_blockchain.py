@@ -47,10 +47,14 @@ class Blockchain:
 
     @staticmethod
     def pickle_cmd(cmd):
-        """Serialize modbus command for JSON object."""
-        modbus_pickle = pickle.dump(cmd)
+        """Serialize modbus command."""
+        with open("cmd.pickle", "wb") as modbus_cmd:
+            pickle.dump(cmd, modbus_cmd)
 
-        return modbus_pickle
+    @staticmethod
+    def pickle_block(block):
+        with open("block.pickle", "wb") as modbus_block:
+            pickle.dump(block, modbus_block)
 
     def new_transaction(self, sender, recipient, cmd):
         """Adds a new transaction to the list of transactions.
