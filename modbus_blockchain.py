@@ -5,6 +5,7 @@ import pymodbus
 
 from time import time
 from urllib.parse import urlparse
+from Modbus.hashing_server import ModbusTransaction
 
 
 class Blockchain:
@@ -19,7 +20,7 @@ class Blockchain:
         self.recipient = None
         self.modbus_cmd = None
 
-        self.new_block(previous_hash=1, proof=100)  # Create the genesis block
+        self.genesis_block = self.new_block(previous_hash=1, proof=100)  # Create the genesis block
         # self.nodes = set()  # List of nodes in blockchain n/w; ensures specific node only appears once
 
     # def register_node(self, address):
@@ -56,12 +57,12 @@ class Blockchain:
         with open("block.pickle", "wb") as modbus_block:
             pickle.dump(block, modbus_block)
 
-    def new_transaction(self, sender, recipient, cmd):
+    def new_transaction(self, sender, recipient, cmd_and_hash):
         """Adds a new transaction to the list of transactions.
 
         The returned index is the index of the next transaction to be mined.
         """
-        self.current_transactions.append({"sender": sender, "recipient": recipient, "modbus_cmd": cmd})
+        self.current_transactions.append({"sender": sender, "recipient": recipient, "cmd_tuple": cmd_and_hash})
 
         return self.last_block["index"] + 1  # Block index of this new transaction
 
@@ -101,14 +102,14 @@ class Blockchain:
 
         return guess_hash[:4] == "0000"
 
-    def mine(self):
+    def mine(self, sender, recipient, cmd_and_hash):
         """Mines a new block"""
         # Get next proof
         self.last_proof = self.last_block["proof"]
         self.proof = self.proof_of_work(self.last_proof)
 
         # Mine a new coin
-        self.add_transaction(sender="0", recipient=node_identifier, cmd=1)
+        self.add_transaction(sender, recipient, cmd_and_hash)
 
         # Add new block to chain
         self.previous_hash = self.hash(self.last_block)
@@ -148,83 +149,84 @@ class Blockchain:
 
         return chain
 
-    def valid_chain(self, chain):
-        """Determine if a chain is valid"""
-        last_block = chain[0]
-        current_index = 1
+    # def valid_chain(self, chain):
+    #     """Determine if a chain is valid"""
+    #     last_block = chain[0]
+    #     current_index = 1
+    #
+    #     while current_index < len(chain):
+    #         block = chain[current_index]
+    #         print("Last block = {}".format(last_block))
+    #         print("Current block = {}".format(block))
+    #         print("\n---------\n")
+    #
+    #         # Check that the current block's hash is correct
+    #         if block["previous_hash"] != self.hash(last_block):
+    #             return False
+    #
+    #         # Check proof of work is correct
+    #         if not self.valid_proof(last_block["proof"], block["proof"]):
+    #             return False
+    #
+    #         last_block = block
+    #         current_index += 1
+    #
+    #     return True
 
-        while current_index < len(chain):
-            block = chain[current_index]
-            print("Last block = {}".format(last_block))
-            print("Current block = {}".format(block))
-            print("\n---------\n")
+    # def resolve_conflicts(self):
+    #     """Consensus algorithm
+    #
+    #     Resolves conflicts by replacing current chain with longest one on n/w. Assumes longest chain is the only
+    #     valid chain.
+    #     """
+    #     neighbors = self.nodes
+    #     new_chain = None
+    #
+    #     # Look for chains longer than current
+    #     max_length = len(self.chain)
+    #
+    #     # Verify chains from all n/w nodes
+    #     for node in neighbors:
+    #         node_length = node.full_chain()["length"]
+    #         node_chain = node.full_chain()["chain"]
+    #
+    #         # Check if node chain longer than current chain
+    #         if node_length > max_length and self.valid_chain(node_chain):
+    #             max_length = node_length
+    #             new_chain = node_chain
+    #
+    #     # Replace current chain if node chain is longer
+    #     if new_chain:
+    #         self.chain = new_chain
+    #         return True
+    #
+    #     return False
 
-            # Check that the current block's hash is correct
-            if block["previous_hash"] != self.hash(last_block):
-                return False
+    # def register_nodes(self, nodes):
+    #     if not nodes:
+    #         raise ValueError("Please supply a valid list of nodes")
+    #     else:
+    #         for node in nodes:
+    #             self.register_node(node)
+    #
+    #     return "New nodes have been added\nNodes: {}".format(list(self.nodes))
 
-            # Check proof of work is correct
-            if not self.valid_proof(last_block["proof"], block["proof"]):
-                return False
-
-            last_block = block
-            current_index += 1
-
-        return True
-
-    def resolve_conflicts(self):
-        """Consensus algorithm
-
-        Resolves conflicts by replacing current chain with longest one on n/w. Assumes longest chain is the only
-        valid chain.
-        """
-        neighbors = self.nodes
-        new_chain = None
-
-        # Look for chains longer than current
-        max_length = len(self.chain)
-
-        # Verify chains from all n/w nodes
-        for node in neighbors:
-            node_length = node.full_chain()["length"]
-            node_chain = node.full_chain()["chain"]
-
-            # Check if node chain longer than current chain
-            if node_length > max_length and self.valid_chain(node_chain):
-                max_length = node_length
-                new_chain = node_chain
-
-        # Replace current chain if node chain is longer
-        if new_chain:
-            self.chain = new_chain
-            return True
-
-        return False
-
-    def register_nodes(self, nodes):
-        if not nodes:
-            raise ValueError("Please supply a valid list of nodes")
-        else:
-            for node in nodes:
-                self.register_node(node)
-
-        return "New nodes have been added\nNodes: {}".format(list(self.nodes))
-
-    def consensus(self):
-        replaced = self.resolve_conflicts()
-
-        if replaced:
-            return "Our chain was replaced with {}".format(self.chain)
-        else:
-            return "Our chain is accurate. Chain is {}".format(self.chain)
+    # def consensus(self):
+    #     replaced = self.resolve_conflicts()
+    #
+    #     if replaced:
+    #         return "Our chain was replaced with {}".format(self.chain)
+    #     else:
+    #         return "Our chain is accurate. Chain is {}".format(self.chain)
 
 
 if __name__ == "__main__":
     blockchain = Blockchain()
+    transaction = ModbusTransaction()
+    transaction.establish_conn()
     node_identifier = "127.0.0.1"
-    print(blockchain.mine())
-    blockchain.mine()
-    blockchain.mine()
-    blockchain.mine()
-    print(blockchain.add_transaction(sender=node_identifier, recipient="someone_else", cmd=5))
-    print(json.dumps(blockchain.full_chain(), sort_keys=True, indent=4))  # Pretty print blockchain
+    print(blockchain.genesis_block)
+    print(blockchain.mine(sender=node_identifier, recipient="someone_else", cmd_and_hash=transaction.cmd_and_hash()))
+    # print(blockchain.mine(sender=node_identifier, recipient="someone_else", cmd_and_hash=transaction.cmd_and_hash()))
+    # print(json.dumps(blockchain.full_chain(), sort_keys=True, indent=4))  # Pretty print blockchain
+    transaction.close_conn()

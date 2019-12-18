@@ -14,7 +14,7 @@ class ModbusTransaction:
     def establish_conn(self):
         self.client = ModbusTcpClient(self.host, self.port)
 
-    def write_single_coil(self, address=1, value=True):
+    def write_single_coil(self, address=1, value=False):
         return self.client.write_coil(address, value)
 
     def read_single_coil(self, address=1, count=1):
@@ -38,13 +38,20 @@ class ModbusTransaction:
     def close_conn(self):
         self.client.close()
 
+    def cmd_and_hash(self):
+        cmd = self.write_single_coil()
+        hash = self.serialize_cmd(cmd)
+        return cmd, hash
+
 
 if __name__ == '__main__':
     transaction = ModbusTransaction()
     transaction.establish_conn()
-    modbus_cmd = transaction.write_single_coil()
-    digest = transaction.serialize_cmd(modbus_cmd)
-    print(digest)
+    # modbus_cmd = transaction.write_single_coil()
+    # print(modbus_cmd)
+    # digest = transaction.serialize_cmd(modbus_cmd)
+    # print(digest)
+    print(transaction.cmd_and_hash())
     results = transaction.read_single_coil()
     print(results.bits[0])
     transaction.close_conn()
