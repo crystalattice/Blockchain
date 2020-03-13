@@ -1,6 +1,6 @@
 import hashlib
-import json
 import pickle
+import pprint
 
 from time import time
 from urllib.parse import urlparse
@@ -59,14 +59,6 @@ class Blockchain:
         with open("block.pickle", "wb") as modbus_block:
             pickle.dump(block, modbus_block)
 
-    def create_hash(self, block):
-        """Create a hash digest of a block
-
-        Hash object has to be a bytes or bytearray, so the pickled block is converted to bytes
-        """
-        self.pickle_block = block
-        return hashlib.sha256(b"self.pickle_block").hexdigest()
-
     @staticmethod
     def valid_proof(last_proof, proof):
         """Validates proof of work"""
@@ -97,6 +89,14 @@ class Blockchain:
         self.chain.append(block)  # Add new block to chain
 
         return block
+
+    def create_hash(self, block):
+        """Create a hash digest of a block
+
+        Hash object has to be a bytes or bytearray, so the pickled block is converted to bytes
+        """
+        self.pickle_block = block
+        return hashlib.sha256(b"self.pickle_block").hexdigest()
 
     def proof_of_work(self, last_proof):
         """Proof of work algorithm.
@@ -237,12 +237,16 @@ if __name__ == "__main__":
     transaction.establish_conn()
     node_identifier = "127.0.0.1"
     print("***Genesis Block***")
-    print(blockchain.genesis_block)
-    print("***First Block***")
-    print(blockchain.mine(sender=node_identifier, recipient="someone_else", cmd_and_hash=transaction.cmd_and_hash()))
-    print("***Second Block")
-    print(blockchain.mine(sender=node_identifier, recipient="someone_else", cmd_and_hash=transaction.cmd_and_hash()))
-    # print(json.dumps(blockchain.full_chain(), sort_keys=True, indent=4))  # Pretty print blockchain
-    print("***Full Chain***")
-    print(blockchain.full_chain)
+    pprint.pprint(blockchain.genesis_block)
+    print("\n***First Block***")
+    pprint.pprint(
+        blockchain.mine(sender=node_identifier, recipient="192.168.10.96", cmd_and_hash=transaction.cmd_and_hash()))
+    print("\n***Second Block***")
+    pprint.pprint(
+        blockchain.mine(sender=node_identifier, recipient="second_address", cmd_and_hash=transaction.cmd_and_hash()))
+    print("\n***Third Block***")
+    pprint.pprint(
+        blockchain.mine(sender=node_identifier, recipient="third_address", cmd_and_hash=transaction.cmd_and_hash()))
+    print("\n***Full Chain***")
+    pprint.pprint(blockchain.full_chain)
     transaction.close_conn()
