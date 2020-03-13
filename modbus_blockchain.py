@@ -15,6 +15,7 @@ class Blockchain:
         self.proof = None
         self.previous_hash = None
         self.block = None
+        self.block_hash = None
         self.sender = None
         self.recipient = None
         self.modbus_cmd = None
@@ -82,7 +83,8 @@ class Blockchain:
             "timestamp": time(),
             "transactions": self.current_transactions,
             "proof": proof,
-            "previous_hash": previous_hash or self.create_hash(self.chain[-1])
+            "previous_hash": previous_hash or self.create_hash(self.chain[-1]),
+            "block_hash": self.block_hash
         }
 
         self.current_transactions = []  # Reset the current transactions list
@@ -122,13 +124,15 @@ class Blockchain:
         # Add new block to chain
         self.previous_hash = self.create_hash(self.last_block)
         self.block = self.new_block(self.proof, self.previous_hash)
+        self.block_hash = self.create_hash(self.block)
 
         response = {
             "message": "New block forged",
             "index": self.block["index"],
             "transactions": self.block["transactions"],
             "proof": self.block["proof"],
-            "previous_hash": self.block["previous_hash"]
+            "previous_hash": self.block["previous_hash"],
+            "current_block_hash": self.block["block_hash"]
         }
 
         return response
@@ -157,8 +161,8 @@ class Blockchain:
             self.modbus_cmd = cmd
 
         # Make new transaction
-        index = self.new_transaction(self.sender, self.recipient, self.modbus_cmd)
-        return "Transaction will be added to block {}".format(index)
+        self.new_transaction(self.sender, self.recipient, self.modbus_cmd)
+        # return "Transaction will be added to block {}".format(index)
 
     # def valid_chain(self, chain):
     #     """Determine if a chain is valid"""
@@ -250,3 +254,4 @@ if __name__ == "__main__":
     print("\n***Full Chain***")
     pprint.pprint(blockchain.full_chain)
     transaction.close_conn()
+# TODO: Figure out why current block hash doesn't change
