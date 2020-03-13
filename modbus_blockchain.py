@@ -37,14 +37,24 @@ class Blockchain:
         """Display the entire blockchain."""
         return {"chain": self.chain, "length": len(self.chain)}
 
-    @staticmethod
-    def pickle_cmd(cmd):
+    @property
+    def pickle_cmd(self):
+        with open("cmd.pickle", "r") as modbus_cmd:
+            return modbus_cmd
+
+    @pickle_cmd.setter
+    def pickle_cmd(self, cmd):
         """Serialize modbus command."""
         with open("cmd.pickle", "wb") as modbus_cmd:
             pickle.dump(cmd, modbus_cmd)
 
-    @staticmethod
-    def pickle_block(block):
+    @property
+    def pickle_block(self):
+        with open("block.pickle", "r") as modbus_block:
+            return modbus_block
+
+    @pickle_block.setter
+    def pickle_block(self, block):
         """Serialize hashed block"""
         with open("block.pickle", "wb") as modbus_block:
             pickle.dump(block, modbus_block)
@@ -225,9 +235,13 @@ if __name__ == "__main__":
     transaction = ModbusTransaction()
     transaction.establish_conn()
     node_identifier = "127.0.0.1"
+    print("***Genesis Block***")
     print(blockchain.genesis_block)
+    print("***First Block***")
     print(blockchain.mine(sender=node_identifier, recipient="someone_else", cmd_and_hash=transaction.cmd_and_hash()))
+    # print("***Second Block")
     # print(blockchain.mine(sender=node_identifier, recipient="someone_else", cmd_and_hash=transaction.cmd_and_hash()))
     # print(json.dumps(blockchain.full_chain(), sort_keys=True, indent=4))  # Pretty print blockchain
+    print("***Full Chain***")
     print(blockchain.full_chain)
     transaction.close_conn()
