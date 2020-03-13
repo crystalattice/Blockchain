@@ -22,6 +22,48 @@ class Blockchain:
         self.genesis_block = self.new_block(previous_hash=1, proof=100)  # Create the genesis block
         # self.nodes = set()  # List of nodes in blockchain n/w; ensures specific node only appears once
 
+    @property
+    def last_block(self):
+        """Return last block in chain"""
+        return self.chain[-1]
+
+    @last_block.setter
+    def last_block(self, block):
+        """Add block to end of chain"""
+        self.chain.append(block)
+
+    @property
+    def full_chain(self):
+        """Display the entire blockchain."""
+        return {"chain": self.chain, "length": len(self.chain)}
+
+    @staticmethod
+    def pickle_cmd(cmd):
+        """Serialize modbus command."""
+        with open("cmd.pickle", "wb") as modbus_cmd:
+            pickle.dump(cmd, modbus_cmd)
+
+    @staticmethod
+    def pickle_block(block):
+        """Serialize hashed block"""
+        with open("block.pickle", "wb") as modbus_block:
+            pickle.dump(block, modbus_block)
+
+    @staticmethod
+    def create_hash(block):
+        """Create a hash digest of a block"""
+        block_string = json.dumps(block, sort_keys=True).encode()
+
+        return hashlib.sha256(block_string).hexdigest()
+
+    @staticmethod
+    def valid_proof(last_proof, proof):
+        """Validates proof of work"""
+        guess = f'{last_proof}{proof}'.encode()
+        guess_hash = hashlib.sha256(guess).hexdigest()
+
+        return guess_hash[:4] == "0000"
+
     # def register_node(self, address):
     #     """Add a new node to the list of n/w nodes"""
     #     Get node URL address
@@ -37,49 +79,13 @@ class Blockchain:
             "timestamp": time(),
             "transactions": self.current_transactions,
             "proof": proof,
-            "previous_hash": previous_hash or self.hash(self.chain[-1])
+            "previous_hash": previous_hash or self.create_hash(self.chain[-1])
         }
 
         self.current_transactions = []  # Reset the current transactions list
         self.chain.append(block)  # Add new block to chain
 
         return block
-
-    @staticmethod
-    def pickle_cmd(cmd):
-        """Serialize modbus command."""
-        with open("cmd.pickle", "wb") as modbus_cmd:
-            pickle.dump(cmd, modbus_cmd)
-
-    @staticmethod
-    def pickle_block(block):
-        with open("block.pickle", "wb") as modbus_block:
-            pickle.dump(block, modbus_block)
-
-    def new_transaction(self, sender, recipient, cmd_and_hash):
-        """Adds a new transaction to the list of transactions.
-
-        The returned index is the index of the next transaction to be mined.
-        """
-        self.current_transactions.append({"sender": sender, "recipient": recipient, "cmd_tuple": cmd_and_hash})
-
-        return self.last_block["index"] + 1  # Block index of this new transaction
-
-    @staticmethod
-    def hash(block):
-        """Create a hash digest of a block"""
-        block_string = json.dumps(block, sort_keys=True).encode()
-
-        return hashlib.sha256(block_string).hexdigest()
-
-    @property
-    def last_block(self):
-        """Return last block in chain"""
-        return self.chain[-1]
-
-    @last_block.setter
-    def last_block(self, block):
-        self.chain.append(block)
 
     def proof_of_work(self, last_proof):
         """Proof of work algorithm.
@@ -93,14 +99,6 @@ class Blockchain:
 
         return proof
 
-    @staticmethod
-    def valid_proof(last_proof, proof):
-        """Validates proof of work"""
-        guess = f'{last_proof}{proof}'.encode()
-        guess_hash = hashlib.sha256(guess).hexdigest()
-
-        return guess_hash[:4] == "0000"
-
     def mine(self, sender, recipient, cmd_and_hash):
         """Mines a new block"""
         # Get next proof
@@ -111,7 +109,7 @@ class Blockchain:
         self.add_transaction(sender, recipient, cmd_and_hash)
 
         # Add new block to chain
-        self.previous_hash = self.hash(self.last_block)
+        self.previous_hash = self.create_hash(self.last_block)
         self.block = self.new_block(self.proof, self.previous_hash)
 
         response = {
@@ -123,6 +121,15 @@ class Blockchain:
         }
 
         return response
+
+    def new_transaction(self, sender, recipient, cmd_and_hash):
+        """Adds a new transaction to the list of transactions.
+
+        The returned index is the index of the next transaction to be mined.
+        """
+        self.current_transactions.append({"sender": sender, "recipient": recipient, "cmd_tuple": cmd_and_hash})
+
+        return self.last_block["index"] + 1  # Block index of this new transaction
 
     def add_transaction(self, sender, recipient, cmd):
         """Add a new transaction to chain."""
@@ -141,12 +148,6 @@ class Blockchain:
         # Make new transaction
         index = self.new_transaction(self.sender, self.recipient, self.modbus_cmd)
         return "Transaction will be added to block {}".format(index)
-
-    def full_chain(self):
-        """Display the entire blockchain."""
-        chain = {"chain": self.chain, "length": len(self.chain)}
-
-        return chain
 
     # def valid_chain(self, chain):
     #     """Determine if a chain is valid"""
@@ -228,4 +229,5 @@ if __name__ == "__main__":
     print(blockchain.mine(sender=node_identifier, recipient="someone_else", cmd_and_hash=transaction.cmd_and_hash()))
     # print(blockchain.mine(sender=node_identifier, recipient="someone_else", cmd_and_hash=transaction.cmd_and_hash()))
     # print(json.dumps(blockchain.full_chain(), sort_keys=True, indent=4))  # Pretty print blockchain
+    print(blockchain.full_chain)
     transaction.close_conn()
