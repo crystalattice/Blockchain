@@ -76,22 +76,6 @@ class Blockchain:
     #
     #     self.nodes.add(address)
 
-    def new_block(self, proof, previous_hash=None):
-        """Creates a new block and adds it to the chain"""
-        block = {
-            "index": len(self.chain) + 1,
-            "timestamp": time(),
-            "transactions": self.current_transactions,
-            "proof": proof,
-            "previous_hash": previous_hash or self.create_hash(self.chain[-1]),
-            "block_hash": self.block_hash
-        }
-
-        self.current_transactions = []  # Reset the current transactions list
-        self.chain.append(block)  # Add new block to chain
-
-        return block
-
     def create_hash(self, block):
         """Create a hash digest of a block
 
@@ -111,6 +95,22 @@ class Blockchain:
             proof += 1
 
         return proof
+
+    def new_block(self, proof, previous_hash=None):
+        """Creates a new block and adds it to the chain"""
+        block = {
+            "index": len(self.chain) + 1,
+            "timestamp": time(),
+            "transactions": self.current_transactions,
+            "proof": proof,
+            "previous_hash": previous_hash,  # or self.create_hash(self.chain[-1]),
+            "block_hash": self.block_hash
+        }
+
+        self.current_transactions = []  # Reset the current transactions list
+        self.chain.append(block)  # Add new block to chain
+
+        return block
 
     def mine(self, sender, recipient, cmd_and_hash):
         """Mines a new block"""
