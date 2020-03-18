@@ -2,9 +2,22 @@ import hashlib
 import pickle
 import pprint
 
+from dataclasses import dataclass
 from time import time
 from urllib.parse import urlparse
 from Modbus.hashing_server import ModbusTransaction
+
+
+@dataclass
+class Block:
+    """Class for individual blocks"""
+    current_proof: str
+    current_hash: str
+    recipient: str
+    transaction: list
+    index: int
+    timestamp: float
+    sender: str = "127.0.0.1"
 
 
 class Blockchain:
@@ -82,7 +95,9 @@ class Blockchain:
         Hash object has to be a bytes or bytearray, so the pickled block is converted to bytes
         """
         self.pickle_block = block
-        return hashlib.sha256(b"self.pickle_block").hexdigest()
+        self.block_hash = hashlib.sha256(b"self.pickle_block").hexdigest()
+
+        return self.block_hash
 
     def proof_of_work(self, last_proof):
         """Proof of work algorithm.
@@ -104,9 +119,10 @@ class Blockchain:
             "transactions": self.current_transactions,
             "proof": proof,
             "previous_hash": previous_hash,  # or self.create_hash(self.chain[-1]),
-            "block_hash": self.block_hash
+            # "block_hash": self.block_hash
         }
-
+        self.create_hash(block)
+        block["block_hash"] = self.block_hash
         self.current_transactions = []  # Reset the current transactions list
         self.chain.append(block)  # Add new block to chain
 
@@ -122,9 +138,9 @@ class Blockchain:
         self.add_transaction(sender, recipient, cmd_and_hash)
 
         # Add new block to chain
-        self.previous_hash = self.create_hash(self.last_block)
+        # self.previous_hash = self.create_hash(self.last_block)
         self.block = self.new_block(self.proof, self.previous_hash)
-        self.block_hash = self.create_hash(self.block)
+        # self.block_hash = self.create_hash(self.block)
 
         response = {
             "message": "New block forged",
@@ -132,7 +148,7 @@ class Blockchain:
             "transactions": self.block["transactions"],
             "proof": self.block["proof"],
             "previous_hash": self.block["previous_hash"],
-            "current_block_hash": self.block["block_hash"]
+            "current_block_hash": self.block_hash
         }
 
         return response
@@ -241,7 +257,8 @@ if __name__ == "__main__":
     transaction.establish_conn()
     node_identifier = "127.0.0.1"
     print("***Genesis Block***")
-    pprint.pprint(blockchain.genesis_block)
+    # pprint.pprint(blockchain.genesis_block)
+    pprint.pprint(blockchain.new_block(blockchain.previous_hash, blockchain.proof))
     print("\n***First Block***")
     pprint.pprint(
         blockchain.mine(sender=node_identifier, recipient="192.168.10.96", cmd_and_hash=transaction.cmd_and_hash()))
