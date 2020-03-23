@@ -11,45 +11,13 @@ from Modbus.hashing_server import ModbusTransaction
 @dataclass
 class Block:
     """Class for individual blocks"""
-    current_proof: str
+    proof: str
     current_hash: str
     recipient: str
     transaction: list
     index: int
     timestamp: float
     sender: str = "127.0.0.1"
-
-
-class Blockchain:
-    def __init__(self):
-        self.chain = []
-        self.current_transactions = []
-        self.last_proof = None
-        self.proof = None
-        self.previous_hash = None
-        self.block = None
-        self.block_hash = None
-        self.sender = None
-        self.recipient = None
-        self.modbus_cmd = None
-
-        self.genesis_block = self.new_block(previous_hash=1, proof=100)  # Create the genesis block
-        # self.nodes = set()  # List of nodes in blockchain n/w; ensures specific node only appears once
-
-    @property
-    def last_block(self):
-        """Return last block in chain"""
-        return self.chain[-1]
-
-    @last_block.setter
-    def last_block(self, block):
-        """Add block to end of chain"""
-        self.chain.append(block)
-
-    @property
-    def full_chain(self):
-        """Display the entire blockchain."""
-        return {"chain": self.chain, "length": len(self.chain)}
 
     @property
     def pickle_cmd(self):
@@ -81,24 +49,6 @@ class Blockchain:
 
         return guess_hash[:4] == "0000"
 
-    # def register_node(self, address):
-    #     """Add a new node to the list of n/w nodes"""
-    #     Get node URL address
-    #     parsed_url = urlparse(address)
-    #     self.nodes.add((parsed_url.netloc))
-    #
-    #     self.nodes.add(address)
-
-    def create_hash(self, block):
-        """Create a hash digest of a block
-
-        Hash object has to be a bytes or bytearray, so the pickled block is converted to bytes
-        """
-        self.pickle_block = block
-        self.block_hash = hashlib.sha256(b"self.pickle_block").hexdigest()
-
-        return self.block_hash
-
     def proof_of_work(self, last_proof):
         """Proof of work algorithm.
 
@@ -110,6 +60,16 @@ class Blockchain:
             proof += 1
 
         return proof
+
+    def create_hash(self, block):
+        """Create a hash digest of a block
+
+        Hash object has to be a bytes or bytearray, so the pickled block is converted to bytes
+        """
+        self.pickle_block = block
+        self.block_hash = hashlib.sha256(b"self.pickle_block").hexdigest()
+
+        return self.block_hash
 
     def new_block(self, proof, previous_hash=None):
         """Creates a new block and adds it to the chain"""
@@ -152,6 +112,39 @@ class Blockchain:
         }
 
         return response
+
+
+class Blockchain:
+    """Class for chain of blocks"""
+    def __init__(self):
+        self.chain = []
+        self.current_transactions = []
+        self.last_proof = None
+        self.proof = None
+        self.previous_hash = None
+        self.block = None
+        self.block_hash = None
+        self.sender = None
+        self.recipient = None
+        self.modbus_cmd = None
+
+        self.genesis_block = self.new_block(previous_hash=1, proof=100)  # Create the genesis block
+        # self.nodes = set()  # List of nodes in blockchain n/w; ensures specific node only appears once
+
+    @property
+    def last_block(self):
+        """Return last block in chain"""
+        return self.chain[-1]
+
+    @last_block.setter
+    def last_block(self, block):
+        """Add block to end of chain"""
+        self.chain.append(block)
+
+    @property
+    def full_chain(self):
+        """Display the entire blockchain."""
+        return {"chain": self.chain, "length": len(self.chain)}
 
     def new_transaction(self, sender, recipient, cmd_and_hash):
         """Adds a new transaction to the list of transactions.
@@ -233,6 +226,14 @@ class Blockchain:
     #
     #     return False
 
+    # def register_node(self, address):
+    #     """Add a new node to the list of n/w nodes"""
+    #     Get node URL address
+    #     parsed_url = urlparse(address)
+    #     self.nodes.add((parsed_url.netloc))
+    #
+    #     self.nodes.add(address)
+
     # def register_nodes(self, nodes):
     #     if not nodes:
     #         raise ValueError("Please supply a valid list of nodes")
@@ -271,4 +272,3 @@ if __name__ == "__main__":
     print("\n***Full Chain***")
     pprint.pprint(blockchain.full_chain)
     transaction.close_conn()
-# TODO: Figure out why current block hash doesn't change
