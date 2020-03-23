@@ -11,107 +11,78 @@ from Modbus.hashing_server import ModbusTransaction
 @dataclass
 class Block:
     """Class for individual blocks"""
-    proof: str
-    current_hash: str
-    recipient: str
-    transaction: list
     index: int
     timestamp: float
+    transaction: list
+    current_proof: int
+    last_proof: int
+    current_hash: str
+    recipient: str
+
     sender: str = "127.0.0.1"
 
     @property
-    def pickle_cmd(self):
+    def pickle_cmd(self) -> object:
         with open("cmd.pickle", "r") as modbus_cmd:
             return modbus_cmd
 
     @pickle_cmd.setter
-    def pickle_cmd(self, cmd):
+    def pickle_cmd(self, cmd: object):
         """Serialize modbus command."""
         with open("cmd.pickle", "wb") as modbus_cmd:
             pickle.dump(cmd, modbus_cmd)
 
     @property
-    def pickle_block(self):
+    def pickle_block(self) -> object:
         with open("block.pickle", "r") as modbus_block:
             return modbus_block
 
     @pickle_block.setter
-    def pickle_block(self, block):
+    def pickle_block(self, block: dict):
         """Serialize hashed block"""
         with open("block.pickle", "wb") as modbus_block:
             pickle.dump(block, modbus_block)
 
-    @staticmethod
-    def valid_proof(last_proof, proof):
-        """Validates proof of work"""
-        guess = f'{last_proof}{proof}'.encode()
-        guess_hash = hashlib.sha256(guess).hexdigest()
-
-        return guess_hash[:4] == "0000"
-
-    def proof_of_work(self, last_proof):
+    def proof_of_work(self, last_proof: int) -> int:
         """Proof of work algorithm.
 
         Find a number (p`) such that hash(pp`) contains 4 ending zeros, where p is the previous p`
         'p' is the previous proof; 'p`' is the new proof
         """
-        proof = 0
-        while not self.valid_proof(last_proof, proof):
-            proof += 1
+        self.current_proof = 0
+        while not self.valid_proof(last_proof):
+            self.current_proof += 1
 
-        return proof
+        return self.current_proof
 
-    def create_hash(self, block):
+    def valid_proof(self, last_proof: int) -> bool:
+        """Validates proof of work"""
+        guess = f'{last_proof}{self.current_proof}'.encode()
+        guess_hash = hashlib.sha256(guess).hexdigest()
+
+        return guess_hash[:4] == "0000"
+
+    def create_hash(self):
         """Create a hash digest of a block
 
-        Hash object has to be a bytes or bytearray, so the pickled block is converted to bytes
+        Hash object has to be a bytes or bytearray, so the pickled block is converted to bytes. Currently only checks
+        one type of hash algorithm; others can be added in the future.
         """
-        self.pickle_block = block
-        self.block_hash = hashlib.sha256(b"self.pickle_block").hexdigest()
+        self.current_hash = hashlib.sha256(self.block).hexdigest()
 
-        return self.block_hash
-
-    def new_block(self, proof, previous_hash=None):
-        """Creates a new block and adds it to the chain"""
+    def new_block(self, chain_index, current_transaction, proof, previous_hash=None):
+        """Creates a new block"""
+        block = Block(index=chain_index, timestamp=time(), transaction=current_transaction, current_proof, last_proof)
         block = {
-            "index": len(self.chain) + 1,
+            "index": len(chain_index) + 1,
             "timestamp": time(),
-            "transactions": self.current_transactions,
+            "transactions": current_transaction,
             "proof": proof,
             "previous_hash": previous_hash,  # or self.create_hash(self.chain[-1]),
-            # "block_hash": self.block_hash
         }
-        self.create_hash(block)
-        block["block_hash"] = self.block_hash
-        self.current_transactions = []  # Reset the current transactions list
-        self.chain.append(block)  # Add new block to chain
+        block["block_hash"] = Block.create_hash(block)  # Added outside the block dictionary to capture all items
 
         return block
-
-    def mine(self, sender, recipient, cmd_and_hash):
-        """Mines a new block"""
-        # Get next proof
-        self.last_proof = self.last_block["proof"]
-        self.proof = self.proof_of_work(self.last_proof)
-
-        # Mine a new coin
-        self.add_transaction(sender, recipient, cmd_and_hash)
-
-        # Add new block to chain
-        # self.previous_hash = self.create_hash(self.last_block)
-        self.block = self.new_block(self.proof, self.previous_hash)
-        # self.block_hash = self.create_hash(self.block)
-
-        response = {
-            "message": "New block forged",
-            "index": self.block["index"],
-            "transactions": self.block["transactions"],
-            "proof": self.block["proof"],
-            "previous_hash": self.block["previous_hash"],
-            "current_block_hash": self.block_hash
-        }
-
-        return response
 
 
 class Blockchain:
@@ -172,6 +143,34 @@ class Blockchain:
         # Make new transaction
         self.new_transaction(self.sender, self.recipient, self.modbus_cmd)
         # return "Transaction will be added to block {}".format(index)
+
+    def mine(self, sender, recipient, cmd_and_hash):
+        """Mines a new block"""
+        self.current_transactions = []  # Reset the current transactions list
+
+        # Get next proof
+        self.last_proof = self.last_block["proof"]
+        self.proof = self.proof_of_work(self.last_proof)
+
+        # Mine a new coin
+        self.add_transaction(sender, recipient, cmd_and_hash)
+
+        # Add new block to chain
+        # self.previous_hash = self.create_hash(self.last_block)
+        self.block = self.new_block(self.proof, self.previous_hash)
+        # self.block_hash = self.create_hash(self.block)
+        self.chain.append(self.block)  # Add new block to chain
+
+        response = {
+            "message": "New block forged",
+            "index": self.block["index"],
+            "transactions": self.block["transactions"],
+            "proof": self.block["proof"],
+            "previous_hash": self.block["previous_hash"],
+            "current_block_hash": self.current_hash
+        }
+
+        return response
 
     # def valid_chain(self, chain):
     #     """Determine if a chain is valid"""

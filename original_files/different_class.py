@@ -61,7 +61,7 @@ class BlockChain(object):
             return False
         elif previous_block.get_block_hash != block.previous_hash:
             return False
-        elif not BlockChain.is_valid_proof(block.proof, previous_block.proof):
+        elif not BlockChain.is_valid_proof(block.current_proof, previous_block.current_proof):
             return False
         elif block.timestamp <= previous_block.timestamp:
             return False
@@ -120,7 +120,7 @@ class BlockChain(object):
 
         previous_block = self.get_last_block
 
-        previous_proof = previous_block.proof
+        previous_proof = previous_block.current_proof
         new_proof = self.create_proof_of_work(previous_proof)
 
         previous_hash = previous_block.get_block_hash
@@ -150,7 +150,7 @@ if __name__ == "__main__":
     print(block_chain.chain)
 
     last_block = block_chain.get_last_block
-    last_proof = last_block.proof
+    last_proof = last_block.current_proof
     proof = block_chain.create_proof_of_work(last_proof)
 
     # Sender "0" means that this node has mined a new block
