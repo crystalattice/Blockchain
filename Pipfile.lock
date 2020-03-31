@@ -244,7 +244,7 @@
                 "sha256:f7cc56a45c983e4e48601fbeec879b62c740cb848c75164f69a48ac0c6e8a21c"
             ],
             "index": "pypi",
-            "version": "==19.10.0"
+            "version": ">=20.3.0"
         },
         "urllib3": {
             "hashes": [
